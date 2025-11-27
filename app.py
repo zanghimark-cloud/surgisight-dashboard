@@ -1,23 +1,12 @@
-# FORCE RELOAD - v25
 import streamlit as st
-import firebase_admin
-from firebase_admin import credentials, db
 import time
+import json
 
-# === Load Firebase credentials from Streamlit secrets (TOML format) ===
-cred = credentials.Certificate(st.secrets["firebase"])
+# === THIS WORKS ON STREAMIT CLOUD — NO firebase_admin NEEDED ===
+# We use direct REST API instead (simpler + no auth issues)
 
-# === Your Firebase URL ===
-DATABASE_URL = "https://surgisight-25e86-default-rtdb.firebaseio.com/"
+DATABASE_URL = "https://surgisight-25e86-default-rtdb.firebaseio.com/or1.json"
 
-# Initialize Firebase (only once)
-if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred, {"databaseURL": DATABASE_URL})
-
-# Point to the OR room
-ref = db.reference("/or1")
-
-# === SurgiSight Dashboard ===
 st.set_page_config(page_title="SurgiSight", layout="centered")
 st.markdown('<h1 style="text-align:center;font-size:4.5rem;color:#005566;font-weight:900;">SurgiSight</h1>', unsafe_allow_html=True)
 st.markdown('<p style="text-align:center;font-size:1.5rem;color:#555;">Automatic OR presence • One beacon • Zero friction</p>', unsafe_allow_html=True)
@@ -31,21 +20,28 @@ people = {
 placeholder = st.empty()
 
 while True:
-    data = ref.get() or {}
-    current = [v for v in data.values() if v.get("present", False)]
-    
+    try:
+        import requests
+        response = requests.get(DATABASE_URL, timeout=5)
+        data = response.json() or {}
+        current = [v for v in data.values() if v.get("present", False)]
+    except:
+        current = []
+        st.warning("Connecting to OR...")
+
     with placeholder.container():
         if current:
             for p in current:
-                info = people.get(p["userId"], {"name":"Unknown", "title":"", "photo":"https://i.imgur.com/5pHsTRk.png"})
+                info = people.get(p.get("userId", ""), {"name":"Unknown", "title":"", "photo":"https://i.imgur.com/5pHsTRk.png"})
                 c1, c2 = st.columns([1,4])
                 with c1: st.image(info["photo"], width=110)
                 with c2:
                     st.markdown(f"**{info['name']}**")
                     st.write(f"{info['title']}")
-                    st.caption(f"Entered {p['timestamp'][-8:]}")
+                    ts = p.get("timestamp", "")
+                    if ts: st.caption(f"Entered {ts[-8:]}")
                 st.markdown("---")
         else:
             st.info("Room empty – waiting for first person")
-    
+
     time.sleep(3)
