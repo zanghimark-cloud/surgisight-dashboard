@@ -1,10 +1,8 @@
 import streamlit as st
 import time
-import json
+import requests
 
-# === THIS WORKS ON STREAMIT CLOUD — NO firebase_admin NEEDED ===
-# We use direct REST API instead (simpler + no auth issues)
-
+# === YOUR FIREBASE URL ===
 DATABASE_URL = "https://surgisight-25e86-default-rtdb.firebaseio.com/or1.json"
 
 st.set_page_config(page_title="SurgiSight", layout="centered")
@@ -21,13 +19,14 @@ placeholder = st.empty()
 
 while True:
     try:
-        import requests
-        response = requests.get(DATABASE_URL, timeout=5)
+        response = requests.get(DATABASE_URL, timeout=10)  # Longer timeout
+        response.raise_for_status()  # Raise error if 403 or other
         data = response.json() or {}
         current = [v for v in data.values() if v.get("present", False)]
-    except:
+        st.success("Connected!")  # Success message (remove later)
+    except Exception as e:
         current = []
-        st.warning("Connecting to OR...")
+        st.warning(f"Connection retrying... (Error: {str(e)[:50]}...)")  # Show partial error for debugging
 
     with placeholder.container():
         if current:
@@ -44,4 +43,4 @@ while True:
         else:
             st.info("Room empty – waiting for first person")
 
-    time.sleep(3)
+    time.sleep(5)  # Slower refresh to avoid rate limits
