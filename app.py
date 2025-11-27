@@ -1,18 +1,20 @@
 import streamlit as st
-from datetime import datetime
-import firebase_admin
-from firebase_admin import db
+from firebase_admin import credentials, db, initialize_app
 import time
 
-# === YOUR EXACT FIREBASE URL (already correct) ===
+# === Load credentials from Streamlit secrets (works locally too if you set the env var)
+if "firebase_credentials" in st.secrets:
+    cred = credentials.Certificate(st.secrets["firebase_credentials"])
+else:
+    # Local testing fallback (no auth needed when DB is in test mode)
+    cred = None
+
 DATABASE_URL = "https://surgisight-25e86-default-rtdb.firebaseio.com/"
 
-# Connect to your Firebase (temporary shortcut for test mode – no full credentials needed yet)
 if not firebase_admin._apps:
-    firebase_admin.initialize_app(options={'databaseURL': DATABASE_URL})
+    initialize_app(cred, {"databaseURL": DATABASE_URL})
 
-# Point to the exact room node
-ref = db.reference('/or1')
+ref = db.reference("/or1")
 
 # === SURGISIGHT BRANDING ===
 st.set_page_config(page_title="SurgiSight OR Screen", layout="centered")
