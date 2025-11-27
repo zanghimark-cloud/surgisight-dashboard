@@ -1,13 +1,10 @@
 import streamlit as st
 from firebase_admin import credentials, db, initialize_app
+import firebase_admin
 import time
 
-# === Load credentials from Streamlit secrets (works locally too if you set the env var)
-if "firebase_credentials" in st.secrets:
-    cred = credentials.Certificate(st.secrets["firebase_credentials"])
-else:
-    # Local testing fallback (no auth needed when DB is in test mode)
-    cred = None
+# Load credentials from Streamlit secrets (TOML → dict)
+cred = credentials.Certificate(st.secrets["firebase"])
 
 DATABASE_URL = "https://surgisight-25e86-default-rtdb.firebaseio.com/"
 
